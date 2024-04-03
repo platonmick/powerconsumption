@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  grafana:
+    image: grafana/grafana:9.0.4
+    container_name: powerconsumption-grafana
+    env_file:
+      - .env
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    depends_on:
+      - influxdb
+    ports:
+      - ${GRAFANA_PORT}:3000
+
+  influxdb:
+    image: influxdb:2.6-alpine
+    container_name: powerconsumption-influxdb
+    env_file:
+      - .env
+    entrypoint: ["./entrypoint.sh"]
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2:rw
+    ports:
+      - ${INFLUX_HOST_PORT}:${INFLUX_CONTAINER_PORT}
+
+  ingester:
+    image: powerconsumption-ingester:1
+    build: ./ingester
+    container_name: powerconsumption-ingester
+    env_file:
+      - .env
+
+volumes:
+  influxdb-storage:
+  grafana-storage:
