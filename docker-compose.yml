@@ -12,6 +12,8 @@ services:
       - influxdb
     ports:
       - ${GRAFANA_PORT}:3000
+    restart: unless-stopped
+
 
   influxdb:
     image: influxdb:2.6-alpine
@@ -23,6 +25,7 @@ services:
       - influxdb-storage:/var/lib/influxdb2:rw
     ports:
       - ${INFLUX_HOST_PORT}:${INFLUX_CONTAINER_PORT}
+    restart: unless-stopped
 
   ingester:
     image: powerconsumption-ingester:1
@@ -30,6 +33,7 @@ services:
     container_name: powerconsumption-ingester
     env_file:
       - .env
+    restart: unless-stopped
 
 volumes:
   influxdb-storage:
