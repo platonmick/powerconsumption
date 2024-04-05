@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   grafana:
-    image: grafana/grafana:9.0.4
+    image: grafana/grafana:latest
     container_name: powerconsumption-grafana
     env_file:
       - .env
@@ -16,7 +16,7 @@ services:
 
 
   influxdb:
-    image: influxdb:2.6-alpine
+    image: influxdb:2.7-alpine
     container_name: powerconsumption-influxdb
     env_file:
       - .env
