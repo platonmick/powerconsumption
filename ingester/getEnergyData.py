@@ -5,7 +5,8 @@ from datetime import datetime
 from typing import List, Dict
 import logging
 from os import environ
-from time import sleep
+import signal
+from threading import Event
 import influxdb_client
 from influxdb_client.client.write_api import SYNCHRONOUS
 
@@ -65,6 +66,16 @@ def get_energy_data():
     return content["StatusSNS"]["ENERGY"]
 
 
+class GracefulDeath:
+  def __init__(self, exit: Event):
+    self.exit = exit
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self, signum, frame):
+    self.exit.set()
+
+
 def main():
     try:
         energydata = get_energy_data()
@@ -77,6 +88,8 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG)
-    while True:
+    exit = Event()
+    sighandler = GracefulDeath(exit)
+    while not exit.is_set():
         main()
-        sleep(60)
+        exit.wait(60)
