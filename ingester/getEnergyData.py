@@ -28,6 +28,7 @@ def create_point_list(energydata: Dict, timestamp: int) -> List[influxdb_client.
     voltage=energydata["Voltage"]
     current=energydata["Current"]
 
+    logging.debug(f"Power = {power}")
     result.append(create_point("power", power, timestamp))
     result.append(create_point("total", total, timestamp))
     result.append(create_point("yesterday", yesterday, timestamp))
@@ -47,7 +48,7 @@ def influx_write(points):
     token = environ["INFLUX_TOKEN"]
     url=environ["INFLUX_URL"]
 
-    logging.info(f"url={url} org={org}")
+    logging.debug(f"url={url} org={org}")
     client = influxdb_client.InfluxDBClient(
         url=url,
         token=token,
