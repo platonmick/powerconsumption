@@ -57,6 +57,8 @@ def influx_write(points):
 
     write_api = client.write_api(write_options=SYNCHRONOUS)
     write_api.write(bucket=bucket, org=org, record=points)
+    logging.debug(f"{len(points)} points written")
+    client.close()
 
 
 def get_energy_data():
