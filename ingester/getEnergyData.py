@@ -83,19 +83,19 @@ class GracefulDeath:
 
 
 def main():
-    try:
-        energydata = get_energy_data()
-        timestamp = int(datetime.now().timestamp())
-        list = create_point_list(energydata=energydata, timestamp=timestamp)
-        influx_write(list)
-    except:
-        logging.exception('Got exception on main handler')
+    exit = Event()
+    sighandler = GracefulDeath(exit)
+    while not exit.is_set():
+        try:
+            energydata = get_energy_data()
+            timestamp = int(datetime.now().timestamp())
+            list = create_point_list(energydata=energydata, timestamp=timestamp)
+            influx_write(list)
+        except:
+            logging.exception('Got exception on main handler')
+        exit.wait(60)
 
 
 if __name__ == "__main__":
     logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s', level=logging.DEBUG)
-    exit = Event()
-    sighandler = GracefulDeath(exit)
-    while not exit.is_set():
-        main()
-        exit.wait(60)
+    main()
