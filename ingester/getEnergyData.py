@@ -86,6 +86,7 @@ def main():
     exit = Event()
     sighandler = GracefulDeath(exit)
     while not exit.is_set():
+        logging.debug("next try")
         try:
             energydata = get_energy_data()
             timestamp = int(datetime.now().timestamp())
@@ -93,6 +94,7 @@ def main():
             influx_write(list)
         except:
             logging.exception('Got exception on main handler')
+        logging.debug("start sleeping for 60 seconds")
         exit.wait(60)
 
 
