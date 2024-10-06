@@ -63,7 +63,10 @@ def influx_write(points):
 
 def get_energy_data():
     uri = "http://192.168.178.39/cm?cmnd=Status%2008"
+    logging.debug("send request")
     response = requests.get(uri)
+    logging.debug("got response")
+    
     if response.status_code != requests.codes.ok:
         logging.info(f"got HTTP status {response.status_code}")
     content = response.json()
