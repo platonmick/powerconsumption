@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   ingester:
-    image: powerconsumption-ingester:3
+    image: powerconsumption-ingester:4
     build: ./ingester
     container_name: powerconsumption-ingester
     env_file:
