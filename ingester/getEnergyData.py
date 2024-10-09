@@ -64,7 +64,7 @@ def influx_write(points):
 def get_energy_data():
     uri = "http://192.168.178.39/cm?cmnd=Status%2008"
     logging.debug("send request")
-    response = requests.get(uri, timeout = (1, 5))
+    response = requests.get(uri, timeout = (2, 5))
     logging.debug("got response")
     response.raise_for_status()
     
