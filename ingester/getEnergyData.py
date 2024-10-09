@@ -64,12 +64,11 @@ def influx_write(points):
 def get_energy_data():
     uri = "http://192.168.178.39/cm?cmnd=Status%2008"
     logging.debug("send request")
-    response = requests.get(uri, timeout = (1, 1))
+    response = requests.get(uri, timeout = (1, 5))
     logging.debug("got response")
     response.raise_for_status()
     
     content = response.json()
-
     return content["StatusSNS"]["ENERGY"]
 
 
@@ -90,18 +89,22 @@ def main():
     while not exit.is_set():
         logging.debug("next try")
         try:
+            sleeptime = 10
             energydata = get_energy_data()
             timestamp = int(datetime.now().timestamp())
             list = create_point_list(energydata=energydata, timestamp=timestamp)
             influx_write(list)
-        except requests.exceptions.Timeout:
-            logging.warning('Timeout')
+            sleeptime = 60
+        except requests.exceptions.ConnectTimeout:
+            logging.warning('ConnectTimeout')
         except requests.exceptions.ReadTimeout:
             logging.warning('ReadTimeout')
+        except requests.exceptions.ConnectionError as e:
+            logging.warning(f'ConnectionError: {e}')
         except BaseException as e:
             logging.exception(f'Got exception on main handler: {e}')
-        logging.debug("start sleeping for 60 seconds")
-        exit.wait(60)
+        logging.debug(f"start sleeping for {sleeptime} seconds")
+        exit.wait(sleeptime)
 
 
 if __name__ == "__main__":
