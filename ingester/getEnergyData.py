@@ -2,31 +2,34 @@
 
 import requests
 from datetime import datetime
-from typing import List, Dict
 import logging
 from os import environ
+import sys
 import signal
 from threading import Event
-import influxdb_client
+from influxdb_client import Point, InfluxDBClient, WriteApi
 from influxdb_client.client.write_api import SYNCHRONOUS
 
-def create_point(field_key, field_value, timestamp):
-    measurement = "powerconsumption"
-    device="delock-0580"
-    return influxdb_client.Point(measurement_name=measurement).tag("device", device).field(field_key, float(field_value)).time(int(timestamp), write_precision="s")
+if sys.version_info < (3, 9):
+    sys.exit("This script requires Python 3.9!")
+
+def create_point(field_key: str, field_value: float, timestamp: datetime) -> Point:
+    measurement: str = "powerconsumption"
+    device: str ="delock-0580"
+    return Point(measurement_name=measurement).tag("device", device).field(field_key, field_value).time(timestamp, write_precision="s")
 
 
-def create_point_list(energydata: Dict, timestamp: int) -> List[influxdb_client.Point]:
-    result = []
-    power=energydata["Power"]
-    total=energydata["Total"]
-    yesterday=energydata["Yesterday"]
-    today=energydata["Today"]
-    apparentPower=energydata["ApparentPower"]
-    reactivePower=energydata["ReactivePower"]
-    factor=energydata["Factor"]
-    voltage=energydata["Voltage"]
-    current=energydata["Current"]
+def create_point_list(energydata: dict[str, float], timestamp: datetime) -> list[Point]:
+    result: list[Point] = []
+    power: float = energydata["Power"]
+    total: float = energydata["Total"]
+    yesterday: float = energydata["Yesterday"]
+    today: float = energydata["Today"]
+    apparentPower: float = energydata["ApparentPower"]
+    reactivePower: float = energydata["ReactivePower"]
+    factor: float = energydata["Factor"]
+    voltage: float = energydata["Voltage"]
+    current: float = energydata["Current"]
 
     logging.debug(f"Power = {power}")
     result.append(create_point("power", power, timestamp))
@@ -42,29 +45,29 @@ def create_point_list(energydata: Dict, timestamp: int) -> List[influxdb_client.
     return result
 
 
-def influx_write(points):
-    bucket = environ["INFLUX_BUCKET_NAME"]
-    org = environ["INFLUX_ORG"]
-    token = environ["INFLUX_TOKEN"]
-    url=environ["INFLUX_URL"]
+def influx_write(points: list[Point]) -> None:
+    bucket: str = environ["INFLUX_BUCKET_NAME"]
+    org: str = environ["INFLUX_ORG"]
+    token: str = environ["INFLUX_TOKEN"]
+    url: str = environ["INFLUX_URL"]
 
     logging.debug(f"url={url} org={org}")
-    client = influxdb_client.InfluxDBClient(
+    client: InfluxDBClient = InfluxDBClient(
         url=url,
         token=token,
         org=org
     )
 
-    write_api = client.write_api(write_options=SYNCHRONOUS)
+    write_api: WriteApi = client.write_api(write_options=SYNCHRONOUS)
     write_api.write(bucket=bucket, org=org, record=points)
     logging.debug(f"{len(points)} points written")
     client.close()
 
 
-def get_energy_data():
-    uri = "http://192.168.178.39/cm?cmnd=Status%2008"
+def get_energy_data() -> dict[str, float]:
+    uri: str = "http://192.168.178.39/cm?cmnd=Status%2008"
     logging.debug("send request")
-    response = requests.get(uri, timeout = (2, 5))
+    response: requests.Response = requests.get(uri, timeout = (2, 5))
     logging.debug("got response")
     response.raise_for_status()
     
@@ -83,17 +86,17 @@ class GracefulDeath:
     self.exit.set()
 
 
-def main():
-    exit = Event()
+def main() -> None:
+    exit: Event = Event()
     sighandler = GracefulDeath(exit)
     while not exit.is_set():
         logging.debug("next try")
         try:
-            sleeptime = 10
-            energydata = get_energy_data()
-            timestamp = int(datetime.now().timestamp())
-            list = create_point_list(energydata=energydata, timestamp=timestamp)
-            influx_write(list)
+            sleeptime: int = 10
+            energydata: dict[str, float] = get_energy_data()
+            timestamp: datetime = datetime.now()
+            points: list[Point] = create_point_list(energydata=energydata, timestamp=timestamp)
+            influx_write(points)
             sleeptime = 60
         except requests.exceptions.ConnectTimeout:
             logging.warning('ConnectTimeout')
